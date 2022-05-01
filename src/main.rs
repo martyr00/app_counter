@@ -1,4 +1,4 @@
-use actix_web::{web, App, HttpServer};
+use actix_web::{web, App, HttpServer, guard, HttpResponse};
 use std::sync::Mutex;
 
 struct AppStateWithCounter {
@@ -8,6 +8,12 @@ struct AppStateWithCounter {
 async fn index(data: web::Data<AppStateWithCounter>) -> String {
     let mut counter = data.counter.lock().unwrap(); // <- get counter's MutexGuard
     *counter += 1; // <- access counter inside MutexGuard
+
+    format!("Request number: {}", counter) // <- response with count
+}
+async fn minus(data: web::Data<AppStateWithCounter>) -> String {
+    let mut counter = data.counter.lock().unwrap(); // <- get counter's MutexGuard
+    *counter -= 1; // <- access counter inside MutexGuard
 
     format!("Request number: {}", counter) // <- response with count
 }
@@ -24,6 +30,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(counter.clone()) // <- register the created data
             .route("/", web::get().to(index))
+            .route("/minus", web::get().to(minus))
     })
         .bind(("127.0.0.1", 8080))?
         .run()
